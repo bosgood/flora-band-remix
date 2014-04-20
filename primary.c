@@ -3,6 +3,8 @@
 
 #define NUM_PIXELS 16
 #define INPUT_PORT 6
+#define BLINK_DELAY 5
+#define NUM_COLORS 10
 
 // Parameter 1 = number of pixels in strip
 // Parameter 2 = pin number (most are valid)
@@ -14,70 +16,74 @@
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUM_PIXELS, INPUT_PORT, NEO_GRB + NEO_KHZ800);
 
 int currentPixel = 0;
+int direction;
+int colorIndex = 0;
 
 // Here is where you can put in your favorite colors that will appear!
 // just add new {nnn, nnn, nnn}, lines. They will be picked out randomly
 //                                  R   G   B
-uint8_t myFavoriteColors[][10] = {
-  {0, 255, 255},
-  {255, 255, 0},
-  {0, 255, 255},
-  {255, 255, 0},
-  {0, 255, 255},
-  {255, 255, 0},
-  {0, 255, 255},
-  {255, 255, 0},
-  {0, 255, 255},
-  {255, 255, 0},
+uint8_t colorList[][NUM_COLORS] = {
+  {0, 255, 0},
+  {255, 0, 255},
+  {0, 255, 0},
+  {255, 0, 255},
+  {0, 255, 0},
+  {255, 0, 255},
+  {0, 255, 0},
+  {255, 0, 255},
+  {0, 255, 0},
+  {255, 0, 255}
 };
 
-// don't edit the line below
-#define FAVCOLORS sizeof(myFavoriteColors) / 10
+#define FAVCOLORS sizeof(colorList) / NUM_COLORS
 
-void setup()
-{
+void setup() {
   strip.begin();
   strip.show(); // Initialize all pixels to 'off'
 }
 
-void loop()
-{
-  flashRandom(5, 1);  // first number is 'wait' delay, shorter num == shorter twinkle
-  flashRandom(5, 3);  // second number is how many neopixels to simultaneously light up
-  flashRandom(5, 2);
+void loop() {
+  lightUp();
 }
 
-void flashRandom(int wait, uint8_t howmany) {
-  for(uint16_t i=0; i<howmany; i++) {
-    // pick a random favorite color!
-    int c = random(FAVCOLORS);
-    int red = myFavoriteColors[c][0];
-    int green = myFavoriteColors[c][1];
-    int blue = myFavoriteColors[c][2];
-
-    // get a random pixel from the list
-    int j = random(strip.numPixels());
-
-    // now we will 'fade' it in 5 steps
-    for (int x=0; x < 5; x++) {
-      int r = red * (x+1); r /= 5;
-      int g = green * (x+1); g /= 5;
-      int b = blue * (x+1); b /= 5;
-
-      strip.setPixelColor(j, strip.Color(r, g, b));
-      strip.show();
-      delay(wait);
-    }
-    // & fade out in 5 steps
-    for (int x=5; x >= 0; x--) {
-      int r = red * x; r /= 5;
-      int g = green * x; g /= 5;
-      int b = blue * x; b /= 5;
-
-      strip.setPixelColor(j, strip.Color(r, g, b));
-      strip.show();
-      delay(wait);
-    }
+void lightUp() {
+  if (++colorIndex == NUM_COLORS) {
+    colorIndex = 0;
   }
-  // LEDs will be off when done (they are faded to 0)
+
+  int red = colorList[colorIndex][0];
+  int green = colorList[colorIndex][1];
+  int blue = colorList[colorIndex][2];
+
+  // Bounds detection
+  if (currentPixel == 0) {
+    direction = 1;
+  } else if (currentPixel == NUM_PIXELS) {
+    direction = -1;
+  }
+
+  // Advancing the pixel
+  currentPixel = currentPixel + (1 * direction);
+
+  // now we will 'fade' it in 5 steps
+  for (int x = 0; x < 5; x++) {
+    int r = red * (x+1); r /= 5;
+    int g = green * (x+1); g /= 5;
+    int b = blue * (x+1); b /= 5;
+
+    strip.setPixelColor(currentPixel, strip.Color(r, g, b));
+    strip.show();
+    delay(BLINK_DELAY);
+  }
+
+  // & fade out in 5 steps
+  for (int x = 5; x >= 0; x--) {
+    int r = red * x; r /= 5;
+    int g = green * x; g /= 5;
+    int b = blue * x; b /= 5;
+
+    strip.setPixelColor(currentPixel, strip.Color(r, g, b));
+    strip.show();
+    delay(BLINK_DELAY);
+  }
 }
